@@ -1,0 +1,15 @@
+version: '3'
+
+services:
+  web:
+    build: .
+#    command: bash
+    entrypoint: /bin/bash
+    volumes:
+      - .:/code
+    stdin_open: true
+    tty: true
+#    ports:
+#      - "8000:8000"
+#    depends_on:
+#      - db
