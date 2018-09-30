@@ -1,9 +1,11 @@
 import scrapy
+import urllib.request
 
 
 class QuotesSpider(scrapy.Spider):
     name = 'oboi_palitra'
     site = 'http://oboi-palitra.ru'
+    vendor_code = ''
 
     def start_requests(self):
         urls = [
@@ -33,13 +35,16 @@ class QuotesSpider(scrapy.Spider):
             yield response.follow(item, self.parse_item)
 
     def parse_item(self, response):
+        self.vendor_code = self.parse_vendor_code(response=response.css('ul.detail_head'))
+
         yield {
-            'vendor_code': self.parse_vendor_code(response=response.css('ul.detail_head')),
+            'vendor_code': self.vendor_code,
             'brand': self.parse_brand(response=response.css('div.d_logo_wrap')),
             'rooms': self.parse_rooms(response=response.css('ul.rooms')),
             'features': self.parse_features(response=response.css('div.features')),
             'suggest': self.parse_suggest(response=response.css('div.suggest_text')),
             'other_colors': self.parse_other_colors(response=response.css('div.left')),
+            'rapport': self.parse_rapport(response=response.css('div.wallpaper')),
             'interior_photo': self.parse_interior_photo(response=response.css('a.open-image')),
             'texture_photo': self.parse_texture_photo(response=response.css('ul.texture_list')),
         }
@@ -81,4 +86,18 @@ class QuotesSpider(scrapy.Spider):
         return response.xpath('@href').extract()
 
     def parse_texture_photo(self, response):
-        return [f'{self.site}{x}' for x in response.css('a').xpath('@href').extract()]
+        return response.css('a').xpath('@href').extract()
+
+    def parse_rapport(self, response):
+        tmp = response.xpath("@style").extract_first()[22:-1].split('/')
+        tmp.pop(0)
+        tmp.pop(1)
+        tmp.pop(1)
+        tmp.pop(4)
+        tmp.pop(4)
+
+        image_link = f'{self.site}/{"/".join(tmp)}'
+        file_name = f'img/{self.vendor_code}.{image_link.split(".")[-1]}'
+        urllib.request.urlretrieve(image_link, file_name)
+
+        return image_link
